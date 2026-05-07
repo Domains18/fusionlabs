@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { rebuildCashbackIndex, rebuildExclusiveIndex } from '../services/offerIndex/builder'
+import { prisma as defaultPrisma, disconnectPrisma } from '../utils/prisma'
 
 // =============================================================================
 //  Cron sweep — handles transitions that aren't triggered by source-table writes:
@@ -51,15 +52,14 @@ export async function refreshOfferIndex(prisma: PrismaClient, now = new Date()):
 }
 
 if (require.main === module) {
-  const prisma = new PrismaClient()
-  refreshOfferIndex(prisma)
+  refreshOfferIndex(defaultPrisma)
     .then((res) => {
       console.log('refreshOfferIndex complete', res)
-      return prisma.$disconnect()
+      return disconnectPrisma()
     })
     .catch(async (err) => {
       console.error(err)
-      await prisma.$disconnect()
+      await disconnectPrisma()
       process.exit(1)
     })
 }
