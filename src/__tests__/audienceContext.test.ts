@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { resolveUserAudiences } from '../graphql/resolvers/user/helpers/offers/filters'
-import type { PrismaClient } from '../../prisma/generated/client'
+import { PrismaClient } from '@prisma/client';
 
 // Lightweight test that the resolver-side audience set is computed correctly
 // for a user holding multiple CustomerType rows. We mock the only Prisma call

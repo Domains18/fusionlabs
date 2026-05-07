@@ -1,4 +1,3 @@
-import { Prisma, PrismaClient, OfferIndexType } from '../../../prisma/generated/client'
 import {
   ALL_CUSTOMER_TYPES,
   AUDIENCE_ALL,
@@ -8,6 +7,7 @@ import {
   audienceForFeedTimeline,
 } from '../../utils/config'
 import { ReviewStatusEnum } from '../../types/general'
+import { OfferIndexType, Prisma, PrismaClient } from '@prisma/client'
 
 // =============================================================================
 //  OfferIndex builder

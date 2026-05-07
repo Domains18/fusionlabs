@@ -13,13 +13,14 @@
     "refresh:offer-index": "ts-node src/jobs/refreshOfferIndex.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^7.8.0",
     "graphql": "^16.9.0",
     "graphql-parse-resolve-info": "^4.13.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
-    "prisma": "^5.22.0",
+    "dotenv": "^17.4.2",
+    "prisma": "^7.8.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"

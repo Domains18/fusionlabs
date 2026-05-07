@@ -2,13 +2,13 @@ import { GqlError } from '../../../types/general'
 import type { ResolverWithPermissions, QueryOffersArgs, CursorPagination } from '../../../types/general'
 import { isUserActive } from '../../../utils/permissions'
 import { getPrismaSelect } from '../../../utils/database'
-import { Prisma } from '../../../../prisma/generated/client'
 import {
   resolveUserAudiences,
   findEligibleOutletIds,
   buildOutletWhere,
   buildOfferSelect,
 } from './helpers/offers/filters'
+import { Prisma } from '@prisma/client'
 
 // =============================================================================
 //  New `offers` resolver.
@@ -92,7 +92,7 @@ export const offers: ResolverWithPermissions<
   // Preserve OfferIndex ordering (pagination cursor is on outlet id, but the
   // residual outletWhere may filter some rows out; we keep the surviving rows
   // in their original index order).
-  const byId = new Map(rows.map((r) => [(r as { id: string }).id, r] as const))
+  const byId = new Map(rows.map((r: any) => [(r as { id: string }).id, r] as const))
   const ordered: Outlet[] = []
   for (const id of outletIds) {
     const r = byId.get(id)

@@ -1,4 +1,4 @@
-import { PrismaClient } from '../../../prisma/generated/client'
+import { PrismaClient } from '@prisma/client'
 import { rebuildCashbackIndex, rebuildExclusiveIndex, rebuildLoyaltyIndex } from './builder'
 
 // Backfill helper. Run once after migration / on cold start. Walks every source

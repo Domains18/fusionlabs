@@ -1,20 +1,9 @@
-import type { ContextType } from '../../../../../types/general'
-import { Prisma, OfferIndexType } from '../../../../../../prisma/generated/client'
-import {
-  CashbackPercentageFilters,
-  MerchantStatusEnum,
-  ReviewStatusEnum,
-} from '../../../../../types/general'
-import { createSearchFilters } from '../../../../../utils/database'
-import {
-  AUDIENCE_ALL,
-  AUDIENCE_NON_CUSTOMER,
-  ORDERED_CUSTOMER_TYPES,
-  audienceForCustomerType,
-  audienceForFeedTimeline,
-  CustomerTypeKey,
-} from '../../../../../utils/config'
-import { customerTypeToEligibileCustomerType } from '../../../../../utils/filters'
+import { OfferIndexType, Prisma } from "@prisma/client"
+import { CashbackPercentageFilters, ContextType, MerchantStatusEnum, ReviewStatusEnum } from "../../../../../types/general"
+import { AUDIENCE_ALL, AUDIENCE_NON_CUSTOMER, audienceForCustomerType, audienceForFeedTimeline, CustomerTypeKey, ORDERED_CUSTOMER_TYPES } from "../../../../../utils/config"
+import { customerTypeToEligibileCustomerType } from "../../../../../utils/filters"
+import { createSearchFilters } from "../../../../../utils/database"
+
 
 // =============================================================================
 //  Helpers for the new resolver. The deeply-nested filter builder from the
@@ -33,6 +22,7 @@ import { customerTypeToEligibileCustomerType } from '../../../../../utils/filter
 //       a single Decimal range, applied directly against
 //       OfferIndex.maxCashbackPercentage.
 // =============================================================================
+
 
 export type UserAudienceContext = {
   audiences: string[]
@@ -80,7 +70,7 @@ export async function resolveUserAudiences({
   // Build legacy fragments only if a caller still wants them (kept for
   // backward compat with helpers that weren't migrated yet).
   const legacyEligibility = buildLegacyEligibility(
-    customerTypes.map((c) => ({ ...c, type: customerTypeToEligibileCustomerType(c.type) }))
+    customerTypes.map((c: any) => ({ ...c, type: customerTypeToEligibileCustomerType(c.type) }))
   )
 
   return {

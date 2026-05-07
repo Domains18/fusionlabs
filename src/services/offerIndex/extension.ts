@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '../../../prisma/generated/client'
+import { Prisma, PrismaClient } from '@prisma/client';
 import {
   rebuildCashbackIndex,
   rebuildExclusiveIndex,

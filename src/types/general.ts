@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../../prisma/generated/client'
+import { PrismaClient } from '@prisma/client'
 import type { GraphQLResolveInfo } from 'graphql'
 
 export type AuthSession = {
