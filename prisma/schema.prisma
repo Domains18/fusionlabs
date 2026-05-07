@@ -1,0 +1,299 @@
+// Prisma schema for the offers resolver optimization.
+//
+// The original models are kept intact (simplified fields only, matching the assignment).
+// The KEY ADDITION is the `OfferIndex` model at the bottom of the file, which is the
+// denormalized read-side projection that the new resolver queries against.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------- Source-of-truth models ----------------
+
+model Outlet {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  merchantId String
+  Merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  PaybillOrTills         PaybillOrTill[]         @relation("OutletPaybillOrTill")
+  CashbackConfigurations CashbackConfiguration[] @relation("OutletCashback")
+  ExclusiveOffers        ExclusiveOffer[]        @relation("OutletExclusive")
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+
+  OfferIndex OfferIndex[]
+
+  @@index([merchantId, isActive])
+}
+
+model PaybillOrTill {
+  id            String    @id @default(cuid())
+  number        Int
+  accountNumber String?
+  type          String
+  isActive      Boolean   @default(true)
+  deletedAt     DateTime?
+
+  Outlets Outlet[] @relation("OutletPaybillOrTill")
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+}
+
+model Merchant {
+  id           String @id @default(cuid())
+  businessName String
+  status       String
+  category     String
+
+  SecondaryCategories    Category[]
+  LoyaltyProgram         LoyaltyProgram?
+  CashbackConfigurations CashbackConfiguration[]
+  ExclusiveOffers        ExclusiveOffer[]
+  Outlets                Outlet[]
+  CustomerTypes          CustomerType[]
+
+  @@index([status, category])
+}
+
+model Category {
+  id         String     @id @default(cuid())
+  name       String     @unique
+  Merchants  Merchant[]
+}
+
+model CashbackConfiguration {
+  id        String    @id @default(cuid())
+  name      String
+  startDate DateTime?
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  eligibleCustomerTypes String[]
+
+  merchantId String
+  Merchant   Merchant @relation(fields: [merchantId], references: [id])
+  Outlets    Outlet[] @relation("OutletCashback")
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+
+  netCashbackBudget  Decimal @default(0.0)
+  usedCashbackBudget Decimal @default(0.0)
+
+  CashbackConfigurationTiers CashbackConfigurationTier[]
+
+  @@index([merchantId, isActive, deletedAt])
+  @@index([startDate, endDate])
+}
+
+model CashbackConfigurationTier {
+  id                      String    @id @default(cuid())
+  name                    String
+  cashbackPercentage      Decimal?
+  minSpend                Decimal   @default(0.0)
+  isActive                Boolean   @default(true)
+  deletedAt               DateTime?
+  cashbackConfigurationId String
+  CashbackConfiguration   CashbackConfiguration @relation(fields: [cashbackConfigurationId], references: [id])
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+
+  @@index([cashbackConfigurationId, isActive, deletedAt])
+}
+
+model ExclusiveOffer {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+
+  eligibleCustomerTypes String[]
+
+  merchantId String?
+  Merchant   Merchant? @relation(fields: [merchantId], references: [id])
+
+  Outlets      Outlet[]                     @relation("OutletExclusive")
+  FeedTimeline ExclusiveOfferFeedTimeline[]
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+
+  netOfferBudget  Decimal @default(0.0)
+  usedOfferBudget Decimal @default(0.0)
+
+  @@index([merchantId, isActive])
+  @@index([startDate, endDate])
+}
+
+model ExclusiveOfferFeedTimeline {
+  id               String         @id @default(cuid())
+  exclusiveOfferId String
+  ExclusiveOffer   ExclusiveOffer @relation(fields: [exclusiveOfferId], references: [id])
+  customerTypeId   String
+  CustomerType     CustomerType   @relation(fields: [customerTypeId], references: [id])
+
+  @@index([customerTypeId])
+  @@index([exclusiveOfferId])
+}
+
+model LoyaltyProgram {
+  id       String  @id @default(cuid())
+  name     String
+  isActive Boolean @default(true)
+
+  merchantId String?   @unique
+  Merchant   Merchant? @relation(fields: [merchantId], references: [id])
+
+  Campaigns              Campaign[]
+  LoyaltyTiers           LoyaltyTier[]
+  MerchantLoyaltyRewards MerchantLoyaltyReward[]
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+
+  pointsUsedInPeriod Decimal  @default(0)
+  pointsIssuedLimit  Decimal?
+}
+
+model LoyaltyTier {
+  id              String    @id @default(cuid())
+  name            String
+  isActive        Boolean   @default(true)
+  deletedAt       DateTime?
+  minCustomerType String
+  multiplier      Decimal   @default(1.0)
+
+  loyaltyProgramId String
+  LoyaltyProgram   LoyaltyProgram @relation(fields: [loyaltyProgramId], references: [id])
+
+  Review   Review? @relation(fields: [reviewId], references: [id])
+  reviewId String? @unique
+
+  @@index([loyaltyProgramId, isActive, deletedAt])
+}
+
+model MerchantLoyaltyReward {
+  id               String         @id @default(cuid())
+  name             String
+  isActive         Boolean        @default(true)
+  loyaltyProgramId String
+  LoyaltyProgram   LoyaltyProgram @relation(fields: [loyaltyProgramId], references: [id])
+  Review           Review?        @relation(fields: [reviewId], references: [id])
+  reviewId         String?        @unique
+}
+
+model Campaign {
+  id               String         @id @default(cuid())
+  name             String
+  startDate        DateTime
+  endDate          DateTime
+  isActive         Boolean        @default(true)
+  deletedAt        DateTime?
+  loyaltyProgramId String
+  LoyaltyProgram   LoyaltyProgram @relation(fields: [loyaltyProgramId], references: [id])
+  Review           Review?        @relation(fields: [reviewId], references: [id])
+  reviewId         String?        @unique
+}
+
+model CustomerType {
+  id         String   @id @default(cuid())
+  userId     String
+  merchantId String
+  type       String
+  Merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  FeedTimeline ExclusiveOfferFeedTimeline[]
+
+  @@unique([userId, merchantId])
+  @@index([userId])
+}
+
+model Review {
+  id     String @id @default(cuid())
+  status String
+
+  Outlet                    Outlet?
+  PaybillOrTill             PaybillOrTill?
+  CashbackConfiguration     CashbackConfiguration?
+  CashbackConfigurationTier CashbackConfigurationTier?
+  ExclusiveOffer            ExclusiveOffer?
+  LoyaltyProgram            LoyaltyProgram?
+  LoyaltyTier               LoyaltyTier?
+  MerchantLoyaltyReward     MerchantLoyaltyReward?
+  Campaign                  Campaign?
+}
+
+// ---------------- Denormalized read-side projection ----------------
+//
+// One row per (outlet, source offer, eligibility audience). The "audience" is a
+// single string drawn from { "All", "NonCustomer", "New", "Infrequent", "Occasional",
+// "Regular", "Vip", "feed:<customerTypeId>" } — the resolver builds an IN(...) list
+// for the requesting user and the database can satisfy the whole eligibility check
+// with a single composite index seek.
+//
+// All correctness predicates (active, review approved, date in range, budget
+// remaining, not deleted) are pre-computed into a single boolean `isAvailable`,
+// which is what the resolver actually filters on. Date-based transitions that
+// no write event covers are handled by `refreshOfferIndex.ts`.
+
+enum OfferIndexType {
+  CASHBACK
+  EXCLUSIVE
+  LOYALTY
+}
+
+model OfferIndex {
+  id String @id @default(cuid())
+
+  outletId   String
+  Outlet     Outlet @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  merchantId String
+
+  offerType OfferIndexType
+  offerId   String // points back to source CashbackConfiguration / ExclusiveOffer / LoyaltyProgram
+
+  // Audience this row satisfies. One source offer fans out to N rows, one per audience.
+  audience String
+
+  // Pre-computed boolean: rolls up isActive AND review=Approved AND not-deleted AND
+  // (startDate <= now AND endDate >= now) AND budget-remaining. Refreshed on every
+  // source mutation and by the cron sweep for time/budget transitions.
+  isAvailable Boolean
+
+  // Stored so the cron sweep can recompute `isAvailable` without rejoining sources.
+  startDate DateTime?
+  endDate   DateTime?
+
+  // For the ZeroToFive / FiveToTen / ... cashback percentage filter. Null for
+  // non-cashback offers. We store the MAX percentage across the offer's tiers
+  // so a single inequality on this column answers the percentage filter.
+  maxCashbackPercentage Decimal?
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([outletId, offerType, offerId, audience])
+  // Primary lookup path used by the resolver: which outlets have any available
+  // offer for this set of audiences? Putting `audience` first lets us probe
+  // each audience the user qualifies for and union the outlet ids.
+  @@index([audience, isAvailable, outletId])
+  // Secondary path for the percentage filter and merchant-scoped queries.
+  @@index([merchantId, offerType, isAvailable])
+  // For the cron sweep that flips rows around date boundaries.
+  @@index([endDate, isAvailable])
+  @@index([startDate, isAvailable])
+}
