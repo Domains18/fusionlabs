@@ -1,14 +1,18 @@
-import { GqlError } from '../../../types/general'
-import type { ResolverWithPermissions, QueryOffersArgs, CursorPagination } from '../../../types/general'
-import { isUserActive } from '../../../utils/permissions'
-import { getPrismaSelect } from '../../../utils/database'
+import { GqlError } from "../../../types/general";
+import type {
+  ResolverWithPermissions,
+  QueryOffersArgs,
+  CursorPagination,
+} from "../../../types/general";
+import { isUserActive } from "../../../utils/permissions";
+import { getPrismaSelect } from "../../../utils/database";
 import {
   resolveUserAudiences,
   findEligibleOutletIds,
   buildOutletWhere,
   buildOfferSelect,
-} from './helpers/offers/filters'
-import { Prisma } from '@prisma/client'
+} from "./helpers/offers/filters";
+import { Prisma } from "@prisma/client";
 
 // =============================================================================
 //  New `offers` resolver.
@@ -28,23 +32,26 @@ import { Prisma } from '@prisma/client'
 //  is gone, replaced by an `id IN (...)` against a small page of ids.
 // =============================================================================
 
-type Outlet = Prisma.OutletGetPayload<Record<string, never>>
+type Outlet = Prisma.OutletGetPayload<Record<string, never>>;
 
 export const offers: ResolverWithPermissions<
   QueryOffersArgs,
   { offers: Outlet[]; pagination: CursorPagination }
 > = async (_, { filterData, pagination }, { prisma, authSession }, info) => {
-  if (!authSession?.userId) throw new GqlError('Unauthorized')
+  if (!authSession?.userId) throw new GqlError("Unauthorized");
 
-  const now = new Date()
-  const take = Math.min(pagination.take ?? 20, 100)
+  const now = new Date();
+  const take = Math.min(pagination.take ?? 20, 100);
 
-  const prismaSelect = getPrismaSelect<Prisma.OutletSelect, { offers: Outlet[] }>({
+  const prismaSelect = getPrismaSelect<
+    Prisma.OutletSelect,
+    { offers: Outlet[] }
+  >({
     info,
-    resolverName: 'offers',
-  })
+    resolverName: "offers",
+  });
 
-  const userCtx = await resolveUserAudiences({ prisma, authSession })
+  const userCtx = await resolveUserAudiences({ prisma, authSession });
 
   // STEP 1 — page of eligible outlet ids from OfferIndex.
   const { outletIds, hasMore } = await findEligibleOutletIds({
@@ -54,7 +61,7 @@ export const offers: ResolverWithPermissions<
     percentage: filterData.percentage,
     cursor: pagination.cursor,
     take,
-  })
+  });
 
   if (outletIds.length === 0) {
     return {
@@ -65,7 +72,7 @@ export const offers: ResolverWithPermissions<
         hasMore: false,
         nextCursor: null,
       },
-    }
+    };
   }
 
   // STEP 2 — load the actual rows. The id-set lookup is the cheap part; the
@@ -74,29 +81,31 @@ export const offers: ResolverWithPermissions<
   const outletWhere = buildOutletWhere({
     search: filterData.search,
     category: filterData.category,
-  })
+  });
 
   const select = buildOfferSelect({
     now,
     prismaSelect,
     legacyEligibility: userCtx.legacyEligibility,
     percentage: filterData.percentage,
-  })
+  });
 
   const rows = await prisma.outlet.findMany({
     where: { AND: [{ id: { in: outletIds } }, outletWhere] },
     select,
-    orderBy: { id: 'asc' },
-  })
+    orderBy: { id: "asc" },
+  });
 
   // Preserve OfferIndex ordering (pagination cursor is on outlet id, but the
   // residual outletWhere may filter some rows out; we keep the surviving rows
   // in their original index order).
-  const byId = new Map(rows.map((r: any) => [(r as { id: string }).id, r] as const))
-  const ordered: Outlet[] = []
+  const byId = new Map(
+    rows.map((r: any) => [(r as { id: string }).id, r] as const),
+  );
+  const ordered: Outlet[] = [];
   for (const id of outletIds) {
-    const r = byId.get(id)
-    if (r) ordered.push(r as unknown as Outlet)
+    const r = byId.get(id);
+    if (r) ordered.push(r as unknown as Outlet);
   }
 
   return {
@@ -105,9 +114,12 @@ export const offers: ResolverWithPermissions<
       cursor: pagination.cursor ?? null,
       take,
       hasMore,
-      nextCursor: hasMore && ordered.length > 0 ? (ordered[ordered.length - 1] as { id: string }).id : null,
+      nextCursor:
+        hasMore && ordered.length > 0
+          ? (ordered[ordered.length - 1] as { id: string }).id
+          : null,
     },
-  }
-}
+  };
+};
 
-offers.permissions = isUserActive
+offers.permissions = isUserActive;

@@ -131,10 +131,8 @@ export function buildPercentageRange(
   }
 }
 
-// -----------------------------------------------------------------------------
 // OfferIndex query: returns the page of distinct outletIds that have at least
 // one available offer matching the user's audience + the percentage filter.
-// -----------------------------------------------------------------------------
 
 export async function findEligibleOutletIds({
   prisma,
@@ -153,7 +151,7 @@ export async function findEligibleOutletIds({
 }): Promise<{ outletIds: string[]; hasMore: boolean }> {
   const range = buildPercentageRange(percentage)
 
-  // We split into two index reads when needed: one to filter cashback rows by
+  // split into two index reads when needed: one to filter cashback rows by
   // the percentage bucket, and one for everything else. They union into the
   // outlet-id set. For the typical no-percentage case there's just one read.
   const baseWhere: Prisma.OfferIndexWhereInput = {

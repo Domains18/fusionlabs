@@ -8,14 +8,20 @@
     "typecheck": "tsc -p . --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "db:up": "docker compose up -d && echo 'Postgres up.'",
+    "db:down": "docker compose down",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "seed": "ts-node prisma/seed.ts",
+    "dev": "ts-node src/server.ts",
+    "start": "node dist/src/server.js",
     "refresh:offer-index": "ts-node src/jobs/refreshOfferIndex.ts"
   },
   "dependencies": {
     "@prisma/client": "^7.8.0",
     "graphql": "^16.9.0",
-    "graphql-parse-resolve-info": "^4.13.0"
+    "graphql-parse-resolve-info": "^4.13.0",
+    "graphql-yoga": "^5.10.4"
   },
   "devDependencies": {
     "@prisma/adapter-pg": "^7.8.0",
